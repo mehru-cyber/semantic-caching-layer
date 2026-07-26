@@ -1,0 +1,40 @@
+services:
+  # The FastAPI Web Service
+  - type: web
+    name: semantic-cache-api
+    env: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: REDIS_HOST
+        value: semantic-redis-stack
+      - key: REDIS_PORT
+        value: "6379"
+      # Required only if EMBEDDING_BACKEND=openai below. The default
+      # "local" backend needs no key at all.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DEFAULT_PROVIDER
+        value: openai
+      - key: EMBEDDING_BACKEND
+        value: local
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: HELICONE_API_KEY
+        sync: false
+      - key: SIMILARITY_THRESHOLD
+        value: "0.95"
+
+  # The Redis Stack Private Service
+  # Note: We must use a Private Service because Render's managed Redis
+  # does NOT include the Vector Search module natively.
+  - type: pserv
+    name: semantic-redis-stack
+    env: image
+    image:
+      url: redis/redis-stack:latest
+    plan: free

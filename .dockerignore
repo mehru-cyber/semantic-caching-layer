@@ -1,0 +1,17 @@
+.env
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.idea/
+.vscode/
+*.log
+redis_data/
+*.rdb
+*.aof
+README.md
+load_test.py
+docker-compose.yml

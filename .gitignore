@@ -1,0 +1,38 @@
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker/Redis local data
+redis_data/
+grafana_data/
+*.rdb
+*.aof
+
+# Logs
+*.log
+
+# Local override configs
+docker-compose.override.yml
