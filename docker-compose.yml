@@ -4,8 +4,8 @@ services:
   redis:
     image: redis/redis-stack:latest
     ports:
-      - "6380:6379"
-      - "8002:8001"
+      - "6379:6379"
+      - "8001:8001"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -55,10 +55,22 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+
+  streamlit:
+    build: ./streamlit_app
+    ports:
+      - "8501:8501"
+    environment:
+      - PROXY_BASE_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   redis_data:
