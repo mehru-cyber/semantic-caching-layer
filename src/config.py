@@ -26,9 +26,15 @@ class Settings(BaseSettings):
     # and the request doesn't specify one explicitly. "openai" or "groq".
     default_provider: str = os.getenv("DEFAULT_PROVIDER", "openai")
 
+    
     # --- Observability ---
     langfuse_public_key: str = os.getenv("LANGFUSE_PUBLIC_KEY", "")
     langfuse_secret_key: str = os.getenv("LANGFUSE_SECRET_KEY", "")
+    # Langfuse's docs currently call this LANGFUSE_BASE_URL; older SDK/docs
+    # versions called it LANGFUSE_HOST. We read both and pass it to the
+    # client explicitly rather than relying on the installed SDK version to
+    # pick the right one up implicitly. Leave unset for Langfuse Cloud (EU).
+    langfuse_host: str = os.getenv("LANGFUSE_BASE_URL", "") or os.getenv("LANGFUSE_HOST", "")
     helicone_api_key: str = os.getenv("HELICONE_API_KEY", "")
 
     # --- Cache tuning ---

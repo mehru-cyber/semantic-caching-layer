@@ -22,9 +22,13 @@ from src import metrics
 
 langfuse = None
 if settings.langfuse_public_key and settings.langfuse_secret_key:
-    langfuse = Langfuse(
-        public_key=settings.langfuse_public_key,
-        secret_key=settings.langfuse_secret_key,
+    _langfuse_kwargs = {
+        "public_key": settings.langfuse_public_key,
+        "secret_key": settings.langfuse_secret_key,
+    }
+    if settings.langfuse_host:
+        _langfuse_kwargs["host"] = settings.langfuse_host
+    langfuse = Langfuse(**_langfuse_kwargs)  secret_key=settings.langfuse_secret_key,
     )
 
 
