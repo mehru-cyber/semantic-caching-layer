@@ -1,12 +1,16 @@
 FROM python:3.12-slim
 
+# Ensure print()/logging output appears in container logs immediately
+# instead of being buffered and only flushed at shutdown -- makes live
+# debugging on platforms like Railway actually show what's happening.
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # System deps for healthcheck curl calls
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
 # Install dependencies
 COPY requirements.txt .
 
@@ -33,7 +37,14 @@ USER appuser
 
 EXPOSE 8000
 
+# Platforms like Railway assign a dynamic $PORT and route/healthcheck
+# against it -- the app must actually listen on that port, not a hardcoded
+# one, or the container looks "unhealthy" even though it's running fine.
+# Locally (docker-compose), $PORT is unset, so this falls back to 8000.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f "http://localhost:${PORT:-8000}/health" || exit 1
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form (not exec/JSON-array form) is required here so $PORT actually
+# gets expanded by the shell at container start -- exec form does not do
+# environment variable substitution.
+CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}
