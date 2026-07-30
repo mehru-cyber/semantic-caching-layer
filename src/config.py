@@ -4,15 +4,15 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # --- Redis ---
-    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_host: str = os.getenv("REDIS_HOST", "localhost").strip()
     redis_port: int = int(os.getenv("REDIS_PORT", 6379))
-    redis_password: str = os.getenv("REDIS_PASSWORD", "")
+    redis_password: str = os.getenv("REDIS_PASSWORD", "").strip()
 
     # --- Providers ---
     # OpenAI is required regardless of which chat provider is used, because
     # embeddings are always generated with OpenAI's text-embedding-3-small.
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "").strip()
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "").strip()
 
     # Which backend generates the vectors used for semantic cache matching.
     # "local" (default): free, offline, sentence-transformers, 384-dim.
@@ -20,13 +20,15 @@ class Settings(BaseSettings):
     #           request and requires OPENAI_API_KEY.
     # NOTE: these two produce different vector dimensions -- switching
     # requires clearing existing Redis cache data (docker-compose down -v).
-    embedding_backend: str = os.getenv("EMBEDDING_BACKEND", "local")
+    # .strip() guards against stray whitespace/tabs from copy-pasting env
+    # vars into a dashboard (e.g. Railway) -- a real failure mode seen in
+    # practice, not just theoretical.
+    embedding_backend: str = os.getenv("EMBEDDING_BACKEND", "local").strip()
 
     # Default provider when a model name doesn't match a known Groq model
     # and the request doesn't specify one explicitly. "openai" or "groq".
-    default_provider: str = os.getenv("DEFAULT_PROVIDER", "openai")
+    default_provider: str = os.getenv("DEFAULT_PROVIDER", "openai").strip()
 
-    
     # --- Observability ---
     langfuse_public_key: str = os.getenv("LANGFUSE_PUBLIC_KEY", "")
     langfuse_secret_key: str = os.getenv("LANGFUSE_SECRET_KEY", "")
@@ -61,5 +63,13 @@ class Settings(BaseSettings):
     model_name: str = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
     upstream_timeout_seconds: float = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", 60.0))
 
+    # Optional gate on /v1/chat/completions and /api/tuning*. If unset
+    # (default), the proxy is fully open -- fine for local dev, NOT fine for
+    # a public URL with real provider keys behind it. When set, callers must
+    # send `Authorization: Bearer <this value>` (same header shape as the
+    # OpenAI SDK already uses, so clients need no special handling).
+    proxy_api_key: str = os.getenv("PROXY_API_KEY", "").strip()
+
 
 settings = Settings()
+

@@ -12,12 +12,14 @@ Usage:
 """
 import argparse
 import asyncio
+import os
 import random
 import statistics
 import time
 import httpx
 
 PROXY_URL = "http://localhost:8000/v1/chat/completions"
+PROXY_API_KEY = os.getenv("PROXY_API_KEY", "")  # only needed if the server has PROXY_API_KEY set
 
 # Base prompt "clusters" -- each cluster is semantically similar phrasings
 # of the same underlying question, so repeated sampling should converge
@@ -65,8 +67,9 @@ async def send_request(client: httpx.AsyncClient, prompt: str, model: str):
         ],
         "temperature": 0.5,
     }
+    headers = {"Authorization": f"Bearer {PROXY_API_KEY}"} if PROXY_API_KEY else {}
     try:
-        response = await client.post(PROXY_URL, json=payload, timeout=30.0)
+        response = await client.post(PROXY_URL, json=payload, headers=headers, timeout=30.0)
         latency = time.time() - start
         cache_status = response.headers.get("X-Cache-Status", "UNKNOWN")
         return cache_status, latency

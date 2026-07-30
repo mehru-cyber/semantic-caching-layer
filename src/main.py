@@ -5,7 +5,7 @@ import json
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response, BackgroundTasks
+from fastapi import FastAPI, Request, Response, BackgroundTasks, Header, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
@@ -193,6 +193,23 @@ def _safe_langfuse_generation(**kwargs):
         print(f"[langfuse] generation() failed, continuing without it: {e}")
 
 
+async def require_api_key(authorization: str | None = Header(default=None)):
+    """
+    Optional bearer-token gate. If PROXY_API_KEY isn't set, this is a no-op
+    (open access) -- appropriate for local dev, not for a public URL with
+    real provider keys behind it. When set, callers send
+    `Authorization: Bearer <key>` -- the same header shape the OpenAI SDK
+    already sends, so no special client handling is needed.
+    """
+    if not settings.proxy_api_key:
+        return
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = authorization[len("Bearer "):].strip()
+    if token != settings.proxy_api_key:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+
 @app.get("/")
 async def root():
     return {
@@ -213,7 +230,7 @@ async def health():
     )
 
 
-@app.post("/v1/chat/completions")
+@app.post("/v1/chat/completions", dependencies=[Depends(require_api_key)])
 async def chat_completions(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
 
@@ -359,12 +376,12 @@ async def chat_completions(request: Request, background_tasks: BackgroundTasks):
         )
 
 
-@app.get("/api/tuning")
+@app.get("/api/tuning", dependencies=[Depends(require_api_key)])
 async def get_tuning():
     return {"current_threshold": settings.similarity_threshold}
 
 
-@app.post("/api/tuning")
+@app.post("/api/tuning", dependencies=[Depends(require_api_key)])
 async def set_tuning(threshold: float):
     if not 0.0 <= threshold <= 1.0:
         return JSONResponse(status_code=400, content={"error": "threshold must be between 0.0 and 1.0"})
@@ -372,7 +389,7 @@ async def set_tuning(threshold: float):
     return {"message": "Threshold updated", "current_threshold": settings.similarity_threshold}
 
 
-@app.get("/api/tuning/analysis")
+@app.get("/api/tuning/analysis", dependencies=[Depends(require_api_key)])
 async def tuning_analysis(sample_limit: int = 5000):
     """
     Shows the hit-rate-vs-threshold tradeoff using recently observed

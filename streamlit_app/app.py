@@ -39,6 +39,11 @@ with st.sidebar:
     st.caption("Chat UI for the semantic caching proxy")
 
     proxy_url = st.text_input("Proxy base URL", value=DEFAULT_PROXY_URL)
+    proxy_api_key = st.text_input(
+        "Proxy API key (only if PROXY_API_KEY is set on the server)",
+        value=os.getenv("PROXY_API_KEY", ""),
+        type="password",
+    )
     model_label = st.selectbox("Model", list(MODEL_OPTIONS.keys()))
     model = MODEL_OPTIONS[model_label]
     system_prompt = st.text_area("System prompt", value="You are a helpful assistant.", height=80)
@@ -59,8 +64,10 @@ with st.sidebar:
     c2.metric("Misses", stats["misses"])
     st.metric("Est. cost saved", f"${est_saved:.4f}")
 
+    auth_headers = {"Authorization": f"Bearer {proxy_api_key}"} if proxy_api_key else {}
+
     try:
-        r = requests.get(f"{proxy_url}/api/tuning", timeout=3)
+        r = requests.get(f"{proxy_url}/api/tuning", headers=auth_headers, timeout=3)
         if r.ok:
             st.caption(f"Current similarity threshold: **{r.json().get('current_threshold')}**")
     except requests.RequestException:
@@ -117,7 +124,7 @@ if prompt:
         placeholder.markdown("\u23F3 thinking...")
         start = time.time()
         try:
-            resp = requests.post(f"{proxy_url}/v1/chat/completions", json=payload, timeout=60)
+            resp = requests.post(f"{proxy_url}/v1/chat/completions", json=payload, headers=auth_headers, timeout=60)
             latency_ms = (time.time() - start) * 1000
             resp.raise_for_status()
             data = resp.json()
