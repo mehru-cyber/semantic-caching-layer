@@ -193,6 +193,17 @@ def _safe_langfuse_generation(**kwargs):
         print(f"[langfuse] generation() failed, continuing without it: {e}")
 
 
+@app.get("/")
+async def root():
+    return {
+        "service": "Semantic Caching Layer",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "chat_completions": "/v1/chat/completions",
+    }
+
+
 @app.get("/health")
 async def health():
     ok = redis_client.ping()
