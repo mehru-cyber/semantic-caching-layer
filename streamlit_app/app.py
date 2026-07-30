@@ -39,10 +39,11 @@ with st.sidebar:
     st.caption("Chat UI for the semantic caching proxy")
 
     proxy_url = st.text_input("Proxy base URL", value=DEFAULT_PROXY_URL)
-    proxy_api_key = st.text_input(
-        "Proxy API key (only if PROXY_API_KEY is set on the server)",
-        value=os.getenv("PROXY_API_KEY", ""),
+    key_override = st.text_input(
+        "Proxy API key override (optional)",
+        value="",
         type="password",
+        help="Leave blank to use the server's configured key automatically.",
     )
     model_label = st.selectbox("Model", list(MODEL_OPTIONS.keys()))
     model = MODEL_OPTIONS[model_label]
@@ -64,7 +65,9 @@ with st.sidebar:
     c2.metric("Misses", stats["misses"])
     st.metric("Est. cost saved", f"${est_saved:.4f}")
 
-    auth_headers = {"Authorization": f"Bearer {proxy_api_key}"} if proxy_api_key else {}
+    _server_key = os.getenv("PROXY_API_KEY", "")
+    effective_key = key_override.strip() or _server_key
+    auth_headers = {"Authorization": f"Bearer {effective_key}"} if effective_key else {}
 
     try:
         r = requests.get(f"{proxy_url}/api/tuning", headers=auth_headers, timeout=3)
